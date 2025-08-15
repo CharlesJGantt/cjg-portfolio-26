@@ -1,21 +1,12 @@
 "use client";
 
 import * as React from "react";
-import {
-  type HTMLMotionProps,
-  motion,
-  type SpringOptions,
-  type Transition,
-  useMotionValue,
-  useSpring,
-} from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
-type StarLayerProps = HTMLMotionProps<"div"> & {
+type StarLayerProps = React.HTMLAttributes<HTMLDivElement> & {
   count: number;
   size: number;
-  transition: Transition;
   starColor: string;
 };
 
@@ -33,9 +24,8 @@ function generateStars(count: number, starColor: string) {
 }
 
 function StarLayer({
-  count = 1000,
+  count = 200,
   size = 1,
-  transition = { repeat: Infinity, duration: 50, ease: "linear" },
   starColor = "#fff",
   className,
   ...props
@@ -47,11 +37,9 @@ function StarLayer({
   }, [count, starColor]);
 
   return (
-    <motion.div
-      animate={{ y: [0, -2000] }}
-      className={cn("absolute top-0 left-0 w-full h-[2000px]", className)}
+    <div
+      className={cn("absolute inset-0", className)}
       data-slot="star-layer"
-      transition={transition}
       {...props}
     >
       <div
@@ -62,22 +50,11 @@ function StarLayer({
           boxShadow: boxShadow,
         }}
       />
-      <div
-        className="absolute bg-transparent rounded-full top-[2000px]"
-        style={{
-          width: `${size}px`,
-          height: `${size}px`,
-          boxShadow: boxShadow,
-        }}
-      />
-    </motion.div>
+    </div>
   );
 }
-
 type StarsBackgroundProps = React.ComponentProps<"div"> & {
   factor?: number;
-  speed?: number;
-  transition?: SpringOptions;
   starColor?: string;
   pointerEvents?: boolean;
 };
@@ -86,17 +63,11 @@ function StarsBackground({
   children,
   className,
   factor = 0.05,
-  speed = 50,
-  transition = { stiffness: 50, damping: 20 },
   starColor = "#fff",
   pointerEvents = true,
   ...props
 }: StarsBackgroundProps) {
-  const offsetX = useMotionValue(1);
-  const offsetY = useMotionValue(1);
-
-  const springX = useSpring(offsetX, transition);
-  const springY = useSpring(offsetY, transition);
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 });
 
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
@@ -105,10 +76,9 @@ function StarsBackground({
       const newOffsetX = -(e.clientX - centerX) * factor;
       const newOffsetY = -(e.clientY - centerY) * factor;
 
-      offsetX.set(newOffsetX);
-      offsetY.set(newOffsetY);
+      setOffset({ x: newOffsetX, y: newOffsetY });
     },
-    [offsetX, offsetY, factor],
+    [factor],
   );
 
   return (
@@ -121,37 +91,14 @@ function StarsBackground({
       onMouseMove={handleMouseMove}
       {...props}
     >
-      <motion.div
+      <div
         className={cn({ "pointer-events-none": !pointerEvents })}
-        style={{ x: springX, y: springY }}
+        style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       >
-        <StarLayer
-          count={1000}
-          size={1}
-          starColor={starColor}
-          transition={{ repeat: Infinity, duration: speed, ease: "linear" }}
-        />
-        <StarLayer
-          count={400}
-          size={2}
-          starColor={starColor}
-          transition={{
-            repeat: Infinity,
-            duration: speed * 2,
-            ease: "linear",
-          }}
-        />
-        <StarLayer
-          count={200}
-          size={3}
-          starColor={starColor}
-          transition={{
-            repeat: Infinity,
-            duration: speed * 3,
-            ease: "linear",
-          }}
-        />
-      </motion.div>
+        <StarLayer count={200} size={1} starColor={starColor} />
+        <StarLayer count={80} size={2} starColor={starColor} />
+        <StarLayer count={40} size={3} starColor={starColor} />
+      </div>
       {children}
     </div>
   );
